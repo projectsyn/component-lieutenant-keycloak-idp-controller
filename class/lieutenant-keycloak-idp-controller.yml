@@ -9,3 +9,23 @@ parameters:
           - ${_base_directory}/component/main.jsonnet
         input_type: jsonnet
         output_path: lieutenant-keycloak-idp-controller/
+
+      - input_paths:
+          - ${_base_directory}/component/lieutenant-keycloak-idp-controller.jsonnet
+        input_type: jsonnet
+        output_path: ${_base_directory}/lieutenant-keycloak-idp-controller
+        output_type: yaml
+      - input_type: external
+        output_path: .
+        input_paths:
+          - ${_kustomize_wrapper}
+        env_vars:
+          INPUT_DIR: ${_base_directory}/lieutenant-keycloak-idp-controller
+        args:
+          - \${compiled_target_dir}/lieutenant-keycloak-idp-controller
+
+      # Cleanup
+      - input_paths:
+          - ${_base_directory}/lieutenant-keycloak-idp-controller
+        input_type: remove
+        output_path: .

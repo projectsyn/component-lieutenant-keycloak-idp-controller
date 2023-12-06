@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: lieutenant-keycloak-idp-controller
+    app.kubernetes.io/instance: manager-rolebinding
+    app.kubernetes.io/managed-by: commodore
+    app.kubernetes.io/name: rolebinding
+    app.kubernetes.io/part-of: lieutenant-keycloak-idp-controller
+  name: lieutenant-keycloak-idp-controller-manager-rolebinding
+  namespace: syn-lieutenant-keycloak-idp-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: manager-role
+subjects:
+- kind: ServiceAccount
+  name: lieutenant-keycloak-idp-controller-controller-manager
+  namespace: syn-lieutenant-keycloak-idp-controller

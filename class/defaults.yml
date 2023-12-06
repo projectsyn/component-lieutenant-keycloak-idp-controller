@@ -2,3 +2,124 @@ parameters:
   lieutenant_keycloak_idp_controller:
     =_metadata: {}
     namespace: syn-lieutenant-keycloak-idp-controller
+    namespaceMetadata: {}
+
+    secrets: {}
+    config_maps:
+      lieutenant-keycloak-idp-controller-templates:
+        data: ${lieutenant_keycloak_idp_controller:templates}
+
+    images:
+      lieutenant_keycloak_idp_controller:
+        registry: ghcr.io
+        image: projectsyn/lieutenant-keycloak-idp-controller
+        tag: v0.1.0-dev1
+      kube_rbac_proxy:
+        registry: gcr.io
+        image: kubebuilder/kube-rbac-proxy
+        tag: v0.14.1
+
+    manifests_version: ${lieutenant_keycloak_idp_controller:images:lieutenant_keycloak_idp_controller:tag}
+
+    kustomize_input:
+      namespace: ${lieutenant_keycloak_idp_controller:namespace}
+
+    controller:
+      env:
+        KEYCLOAK_BASE_URL:
+        KEYCLOAK_USER:
+        KEYCLOAK_PASSWORD:
+        KEYCLOAK_REALM:
+        KEYCLOAK_LOGIN_REALM: master
+        KEYCLOAK_LEGACY_WILDFLY_SUPPORT: 'true'
+        VAULT_ADDRESS:
+
+      args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+
+        - --keycloak-realm=$(KEYCLOAK_REALM)
+        - --keycloak-base-url=$(KEYCLOAK_BASE_URL)
+        - --keycloak-user=$(KEYCLOAK_USER)
+        - --keycloak-password=$(KEYCLOAK_PASSWORD)
+        - --keycloak-login-realm=$(KEYCLOAK_LOGIN_REALM)
+        - --keycloak-legacy-wildfly-support=$(KEYCLOAK_LEGACY_WILDFLY_SUPPORT)
+
+        - --client-template-file=/templates/client.jsonnet
+        - --client-role-mapping-template-file=/templates/client-roles.jsonnet
+
+        - --vault-token-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+        - --vault-address=$(VAULT_ADDRESS)
+
+    templates:
+      vars.jsonnet: |
+        {
+          clientPrefix: 'cluster_',
+          formatRootUrl: function(context) 'https://oauth-openshift.apps.%s.dev' % context.cluster.metadata.name,
+        }
+      client.jsonnet: |
+        local context = std.extVar('context');
+        local vars = import 'vars.jsonnet';
+
+        {
+          clientId: '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ],
+          name: '%s (%s)' % [ context.cluster.spec.displayName, context.cluster.metadata.name ],
+          description: '',
+          rootUrl: vars.formatRootUrl(context),
+          adminUrl: '',
+          baseUrl: '',
+          surrogateAuthRequired: false,
+          enabled: true,
+          alwaysDisplayInConsole: false,
+          clientAuthenticatorType: 'client-secret',
+          redirectUris: [
+            '/oauth2/callback',
+          ],
+          webOrigins: [],
+          notBefore: 0,
+          bearerOnly: false,
+          consentRequired: false,
+          standardFlowEnabled: true,
+          implicitFlowEnabled: false,
+          directAccessGrantsEnabled: true,
+          serviceAccountsEnabled: false,
+          publicClient: false,
+          frontchannelLogout: true,
+          protocol: 'openid-connect',
+          attributes: {
+            'oidc.ciba.grant.enabled': 'false',
+            'backchannel.logout.session.required': 'true',
+            'oauth2.device.authorization.grant.enabled': 'false',
+            'display.on.consent.screen': 'false',
+            'backchannel.logout.revoke.offline.tokens': 'false',
+          },
+          authenticationFlowBindingOverrides: {},
+          fullScopeAllowed: true,
+          nodeReRegistrationTimeout: -1,
+          defaultClientScopes: [
+            'web-origins',
+            'acr',
+            'profile',
+            'roles',
+            'email',
+          ],
+          optionalClientScopes: [
+            'address',
+            'phone',
+            'offline_access',
+            'microprofile-jwt',
+          ],
+          access: {
+            view: true,
+            configure: true,
+            manage: true,
+          },
+        }
+      client-roles.jsonnet: |
+        local context = std.extVar('context');
+
+        [{
+          // https://github.com/sventorben/keycloak-restrict-client-auth#role-based-mode
+          role: 'restricted-access',
+        }]

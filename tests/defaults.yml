@@ -1,3 +1,9 @@
 # Overwrite parameters here
 
-# parameters: {...}
+parameters:
+  lieutenant_keycloak_idp_controller:
+    secrets:
+      keycloak-user:
+        stringData:
+          username: user
+          password: password
