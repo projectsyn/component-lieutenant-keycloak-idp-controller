@@ -1,0 +1,6 @@
+name: lieutenant-keycloak-idp-controller
+title: lieutenant-keycloak-idp-controller
+version: master
+start_page: ROOT:index.adoc
+nav:
+  - modules/ROOT/partials/nav.adoc

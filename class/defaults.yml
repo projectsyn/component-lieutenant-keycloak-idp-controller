@@ -1,0 +1,4 @@
+parameters:
+  lieutenant_keycloak_idp_controller:
+    =_metadata: {}
+    namespace: syn-lieutenant-keycloak-idp-controller
