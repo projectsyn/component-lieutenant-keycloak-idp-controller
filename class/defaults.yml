@@ -75,8 +75,10 @@ parameters:
               'http://localhost:18000/callback',
             ];
 
+        local clientId = '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ];
+
         {
-          clientId: '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ],
+          clientId: clientId,
           name: '%s (%s)' % [ context.cluster.spec.displayName, context.cluster.metadata.name ],
           description: '',
           rootUrl: '',
@@ -98,6 +100,25 @@ parameters:
           publicClient: false,
           frontchannelLogout: true,
           protocol: 'openid-connect',
+          protocolMappers: [
+            {
+              name: 'client roles',
+              protocol: 'openid-connect',
+              protocolMapper: 'oidc-usermodel-client-role-mapper',
+              consentRequired: false,
+              config: {
+                'userinfo.token.claim': 'true',
+                multivalued: 'true',
+                // Yes this is somehow the default value
+                'user.attribute': 'foo',
+                'id.token.claim': 'true',
+                'access.token.claim': 'true',
+                'claim.name': 'roles',
+                'jsonType.label': 'String',
+                'usermodel.clientRoleMapping.clientId': clientId,
+              },
+            },
+          ],
           attributes: {
             'oidc.ciba.grant.enabled': 'false',
             'backchannel.logout.session.required': 'true',
