@@ -71,8 +71,8 @@ parameters:
           else
             [
               // Defaults for https://github.com/int128/kubelogin
-              'http://localhost:18000/callback',
               'http://localhost:8000/callback',
+              'http://localhost:18000/callback',
             ];
 
         {
