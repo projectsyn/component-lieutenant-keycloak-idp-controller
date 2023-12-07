@@ -52,6 +52,8 @@ parameters:
         - --vault-token-file=/var/run/secrets/kubernetes.io/serviceaccount/token
         - --vault-address=$(VAULT_ADDRESS)
 
+        - --keycloak-client-ignore-paths=/protocolMappers/0/id
+
     templates:
       vars.jsonnet: |
         {
