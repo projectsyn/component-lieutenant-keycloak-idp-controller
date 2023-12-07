@@ -56,29 +56,38 @@ parameters:
       vars.jsonnet: |
         {
           clientPrefix: 'cluster_',
-          rootUrl: function(context) null,
-          // Defaults for https://github.com/int128/kubelogin
-          redirectUris: function(context) [
-            'http://localhost:18000',
-            'http://localhost:8000',
-          ],
+          ocpIntegrationName: 'idp',
         }
+
       client.jsonnet: |
         local context = std.extVar('context');
         local vars = import 'vars.jsonnet';
+
+        local redirectUris = function(context)
+          local facts = context.cluster.status.facts;
+          if std.objectHas(facts, 'openshiftOAuthRoute') && facts.openshiftOAuthRoute then
+            [
+              'https://%s/oauth2callback/%s' % [ std.parseJson(facts.openshiftOAuthRoute), vars.ocpIntegrationName ],
+            ]
+          else
+            [
+              // Defaults for https://github.com/int128/kubelogin
+              'http://localhost:18000/callback',
+              'http://localhost:8000/callback',
+            ];
 
         {
           clientId: '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ],
           name: '%s (%s)' % [ context.cluster.spec.displayName, context.cluster.metadata.name ],
           description: '',
-          rootUrl: vars.rootUrl(context),
+          rootUrl: '',
           adminUrl: '',
           baseUrl: '',
           surrogateAuthRequired: false,
           enabled: true,
           alwaysDisplayInConsole: false,
           clientAuthenticatorType: 'client-secret',
-          redirectUris: vars.redirectUris(context),
+          redirectUris: redirectUris(context),
           webOrigins: [],
           notBefore: 0,
           bearerOnly: false,
@@ -119,6 +128,7 @@ parameters:
             manage: true,
           },
         }
+
       client-roles.jsonnet: |
         local context = std.extVar('context');
 
