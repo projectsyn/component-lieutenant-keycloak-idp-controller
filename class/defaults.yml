@@ -56,7 +56,12 @@ parameters:
       vars.jsonnet: |
         {
           clientPrefix: 'cluster_',
-          formatRootUrl: function(context) 'https://oauth-openshift.apps.%s.dev' % context.cluster.metadata.name,
+          rootUrl: function(context) null,
+          // Defaults for https://github.com/int128/kubelogin
+          redirectUris: function(context) [
+            'http://localhost:18000',
+            'http://localhost:8000',
+          ],
         }
       client.jsonnet: |
         local context = std.extVar('context');
@@ -66,16 +71,14 @@ parameters:
           clientId: '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ],
           name: '%s (%s)' % [ context.cluster.spec.displayName, context.cluster.metadata.name ],
           description: '',
-          rootUrl: vars.formatRootUrl(context),
+          rootUrl: vars.rootUrl(context),
           adminUrl: '',
           baseUrl: '',
           surrogateAuthRequired: false,
           enabled: true,
           alwaysDisplayInConsole: false,
           clientAuthenticatorType: 'client-secret',
-          redirectUris: [
-            '/oauth2/callback',
-          ],
+          redirectUris: vars.redirectUris(context),
           webOrigins: [],
           notBefore: 0,
           bearerOnly: false,
