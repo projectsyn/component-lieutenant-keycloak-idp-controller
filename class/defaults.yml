@@ -64,10 +64,9 @@ parameters:
         local vars = import 'vars.jsonnet';
 
         local redirectUris = function(context)
-          local facts = context.cluster.status.facts;
-          if std.objectHas(facts, 'openshiftOAuthRoute') && facts.openshiftOAuthRoute then
+          if std.objectHas(context.cluster.status, 'facts') && std.objectHas(context.cluster.status.facts, 'openshiftOAuthRoute') then
             [
-              'https://%s/oauth2callback/%s' % [ std.parseJson(facts.openshiftOAuthRoute), vars.ocpIntegrationName ],
+              'https://%s/oauth2callback/%s' % [ std.parseJson(context.cluster.status.facts.openshiftOAuthRoute), vars.ocpIntegrationName ],
             ]
           else
             [
