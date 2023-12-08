@@ -11,20 +11,32 @@ data:
     local context = std.extVar('context');
     local vars = import 'vars.jsonnet';
 
+    local redirectUris = function(context)
+      if std.objectHas(context.cluster.status, 'facts') && std.objectHas(context.cluster.status.facts, 'openshiftOAuthRoute') then
+        [
+          'https://%s/oauth2callback/%s' % [ std.parseJson(context.cluster.status.facts.openshiftOAuthRoute), vars.ocpIntegrationName ],
+        ]
+      else
+        [
+          // Defaults for https://github.com/int128/kubelogin
+          'http://localhost:8000/callback',
+          'http://localhost:18000/callback',
+        ];
+
+    local clientId = '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ];
+
     {
-      clientId: '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ],
+      clientId: clientId,
       name: '%s (%s)' % [ context.cluster.spec.displayName, context.cluster.metadata.name ],
       description: '',
-      rootUrl: vars.formatRootUrl(context),
+      rootUrl: '',
       adminUrl: '',
       baseUrl: '',
       surrogateAuthRequired: false,
       enabled: true,
       alwaysDisplayInConsole: false,
       clientAuthenticatorType: 'client-secret',
-      redirectUris: [
-        '/oauth2/callback',
-      ],
+      redirectUris: redirectUris(context),
       webOrigins: [],
       notBefore: 0,
       bearerOnly: false,
@@ -36,6 +48,25 @@ data:
       publicClient: false,
       frontchannelLogout: true,
       protocol: 'openid-connect',
+      protocolMappers: [
+        {
+          name: 'client roles',
+          protocol: 'openid-connect',
+          protocolMapper: 'oidc-usermodel-client-role-mapper',
+          consentRequired: false,
+          config: {
+            'userinfo.token.claim': 'true',
+            multivalued: 'true',
+            // Yes this is somehow the default value
+            'user.attribute': 'foo',
+            'id.token.claim': 'true',
+            'access.token.claim': 'true',
+            'claim.name': 'roles',
+            'jsonType.label': 'String',
+            'usermodel.clientRoleMapping.clientId': clientId,
+          },
+        },
+      ],
       attributes: {
         'oidc.ciba.grant.enabled': 'false',
         'backchannel.logout.session.required': 'true',
@@ -44,7 +75,7 @@ data:
         'backchannel.logout.revoke.offline.tokens': 'false',
       },
       authenticationFlowBindingOverrides: {},
-      fullScopeAllowed: true,
+      fullScopeAllowed: false,
       nodeReRegistrationTimeout: -1,
       defaultClientScopes: [
         'web-origins',
@@ -68,7 +99,7 @@ data:
   vars.jsonnet: |
     {
       clientPrefix: 'cluster_',
-      formatRootUrl: function(context) 'https://oauth-openshift.apps.%s.dev' % context.cluster.metadata.name,
+      ocpIntegrationName: 'idp',
     }
 kind: ConfigMap
 metadata:

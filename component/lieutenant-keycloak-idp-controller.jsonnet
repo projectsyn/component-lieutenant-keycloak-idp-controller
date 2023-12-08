@@ -26,6 +26,13 @@ local controllerPatch = {
   },
   spec: {
     template: {
+      metadata: {
+        annotations: std.foldl(
+          function(prev, k) prev { ['configmap/%s' % k]: std.md5(std.manifestJsonMinified(params.config_maps[k])) },
+          std.objectFields(params.config_maps),
+          {}
+        ),
+      },
       spec: {
         containers: [ {
           name: 'manager',

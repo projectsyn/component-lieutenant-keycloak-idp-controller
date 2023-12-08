@@ -19,6 +19,7 @@ spec:
   template:
     metadata:
       annotations:
+        configmap/lieutenant-keycloak-idp-controller-templates: e1bf9c8a61dc2639d541a3e83ff1ac45
         kubectl.kubernetes.io/default-container: manager
       labels:
         control-plane: controller-manager
@@ -54,6 +55,7 @@ spec:
         - --client-role-mapping-template-file=/templates/client-roles.jsonnet
         - --vault-token-file=/var/run/secrets/kubernetes.io/serviceaccount/token
         - --vault-address=$(VAULT_ADDRESS)
+        - --keycloak-client-ignore-paths=/protocolMappers/0/id
         env:
         - name: KEYCLOAK_BASE_URL
         - name: KEYCLOAK_LEGACY_WILDFLY_SUPPORT
