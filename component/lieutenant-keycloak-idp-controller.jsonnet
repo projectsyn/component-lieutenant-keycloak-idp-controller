@@ -38,6 +38,7 @@ local controllerPatch = {
           name: 'manager',
           args: params.controller.args,
           env: com.envList(params.controller.env),
+          resources: params.controller.resources,
           volumeMounts: [ {
             name: 'templates',
             mountPath: '/templates',

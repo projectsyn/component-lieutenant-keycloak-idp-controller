@@ -11,9 +11,176 @@ default:: `syn-lieutenant-keycloak-idp-controller`
 The namespace in which to deploy this component.
 
 
-== Example
+== `namespaceMetadata`
 
+[horizontal]
+type:: dict
+default:: `{}`
+
+Metadata to be added to the namespace.
+
+
+== `images`
+
+[horizontal]
+type:: dictionary
+
+The images to use for this component.
+
+
+== `manifests_version`
+
+[horizontal]
+type:: string
+default:: `${lieutenant_keycloak_idp_controller:images:lieutenant_keycloak_idp_controller:tag}`
+
+The Git reference to the controller deployment manifests.
+The default is the tag of the controller image.
+
+
+== `controller.env`
+
+[horizontal]
+type:: dict
+default::
++
 [source,yaml]
 ----
-namespace: example-namespace
+KEYCLOAK_BASE_URL:
+KEYCLOAK_USER:
+KEYCLOAK_PASSWORD:
+KEYCLOAK_REALM:
+KEYCLOAK_LOGIN_REALM: master
+KEYCLOAK_LEGACY_WILDFLY_SUPPORT: 'true'
+VAULT_ADDRESS:
 ----
++
+example::
++
+[source,yaml]
+----
+KEYCLOAK_BASE_URL: https://id.example.net
+KEYCLOAK_USER: svc_lieutenant-keycloak-idp-controller
+KEYCLOAK_PASSWORD:
+  secretKeyRef:
+    name: keycloak-credentials
+    key: password
+KEYCLOAK_REALM: myrealm
+KEYCLOAK_LOGIN_REALM: master
+KEYCLOAK_LEGACY_WILDFLY_SUPPORT: 'true'
+VAULT_ADDRESS: https://vault.syn.example.net/
+----
+
+The environment variables to set for the controller container.
+String values are taken verbatim as the `value` fiels, dictionary values are rendered as `valueFrom` fields.
+
+
+== `controller.args`
+
+[horizontal]
+type:: list
+default::
++
+[source,yaml]
+----
+- --health-probe-bind-address=:8081
+- --metrics-bind-address=127.0.0.1:8080
+- --leader-elect
+
+- --keycloak-realm=$(KEYCLOAK_REALM)
+- --keycloak-base-url=$(KEYCLOAK_BASE_URL)
+- --keycloak-user=$(KEYCLOAK_USER)
+- --keycloak-password=$(KEYCLOAK_PASSWORD)
+- --keycloak-login-realm=$(KEYCLOAK_LOGIN_REALM)
+- --keycloak-legacy-wildfly-support=$(KEYCLOAK_LEGACY_WILDFLY_SUPPORT)
+
+- --client-template-file=/templates/client.jsonnet
+- --client-role-mapping-template-file=/templates/client-roles.jsonnet
+
+- --vault-token-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+- --vault-address=$(VAULT_ADDRESS)
+
+- --keycloak-client-ignore-paths=/protocolMappers/0/id
+----
+
+The arguments to pass to the controller container.
+
+
+== `controller.resources`
+
+[horizontal]
+type:: dict
+default::
++
+[source,yaml]
+----
+limits:
+  cpu: 100m
+  memory: 128Mi
+requests:
+  cpu: 10m
+  memory: 32Mi
+----
+
+The resource limits and requests for the controller container.
+
+
+== `templates`
+
+[horizontal]
+type:: dict
+default:: See https://github.com/projectsyn/component-lieutenant-keycloak-idp-controller/blob/master/class/defaults.yml[`defaults.yml`]
+
+The templates for the controller to use.
+Templates can include each other using the `import` function.
+
+Default template creates a client with the following settings:
+- full scope is disabled for security reasons
+- access type is confidential
+- standard flow is enabled
+- direct access grants are enabled
+- client role `restricted-access` is created for https://github.com/sventorben/keycloak-restrict-client-auth#role-based-mode
+- client roles are mapped to the `roles` key of the JWT token
+
+
+== `secrets`
+
+[horizontal]
+type:: dict
+default:: `{}`
+example::
++
+[source,yaml]
+----
+secrets:
+  keycloak-credentials:
+    stringData:
+      password: "?{vaultkv:${cluster:tenant}/${cluster:name}/lieutenant-keycloak-idp-controller/keycloak/password}"
+----
+
+This parameter allows to deploy arbitrary secrets.
+Each entry is transformed into a Secret resource.
+The key is used as the name of the resulting resource.
+The provided value is merged with an empty Secret resource.
+
+[WARNING]
+Always use `stringData` when using Vault references in secret configurations.
+
+
+== `config_maps`
+
+[horizontal]
+type:: dict
+default::
++
+[source,yaml]
+----
+config_maps:
+  lieutenant-keycloak-idp-controller-templates:
+    data: ${lieutenant_keycloak_idp_controller:templates}
+----
+
+This parameter allows to deploy arbitrary config maps.
+Each entry is transformed into a ConfigMap resource.
+The key is used as the name of the resulting resource.
+The provided value is merged with an empty ConfigMap resource.

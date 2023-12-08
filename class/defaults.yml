@@ -54,6 +54,14 @@ parameters:
 
         - --keycloak-client-ignore-paths=/protocolMappers/0/id
 
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 10m
+          memory: 32Mi
+
     templates:
       vars.jsonnet: |
         {
