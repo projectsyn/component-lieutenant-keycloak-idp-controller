@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: lieutenant-keycloak-idp-controller
+    app.kubernetes.io/instance: controller-manager
+    app.kubernetes.io/managed-by: commodore
+    app.kubernetes.io/name: deployment
+    app.kubernetes.io/part-of: lieutenant-keycloak-idp-controller
+    control-plane: controller-manager
+  name: lieutenant-keycloak-idp-controller-controller-manager
+  namespace: syn-lieutenant-keycloak-idp-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        configmap/lieutenant-keycloak-idp-controller-templates: e1bf9c8a61dc2639d541a3e83ff1ac45
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - arm64
+                - ppc64le
+                - s390x
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+      containers:
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        - --keycloak-realm=$(KEYCLOAK_REALM)
+        - --keycloak-base-url=$(KEYCLOAK_BASE_URL)
+        - --keycloak-user=$(KEYCLOAK_USER)
+        - --keycloak-password=$(KEYCLOAK_PASSWORD)
+        - --keycloak-login-realm=$(KEYCLOAK_LOGIN_REALM)
+        - --keycloak-legacy-wildfly-support=$(KEYCLOAK_LEGACY_WILDFLY_SUPPORT)
+        - --client-template-file=/templates/client.jsonnet
+        - --client-role-mapping-template-file=/templates/client-roles.jsonnet
+        - --vault-token-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+        - --vault-address=$(VAULT_ADDRESS)
+        - --keycloak-client-ignore-paths=/protocolMappers/0/id
+        env:
+        - name: KEYCLOAK_BASE_URL
+        - name: KEYCLOAK_LEGACY_WILDFLY_SUPPORT
+          value: "true"
+        - name: KEYCLOAK_LOGIN_REALM
+          value: master
+        - name: KEYCLOAK_PASSWORD
+        - name: KEYCLOAK_REALM
+        - name: KEYCLOAK_USER
+        - name: VAULT_ADDRESS
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: ghcr.io/projectsyn/lieutenant-keycloak-idp-controller:v0.1.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /templates
+          name: templates
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: lieutenant-keycloak-idp-controller-controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          name: lieutenant-keycloak-idp-controller-templates
+        name: templates
