@@ -73,16 +73,19 @@ parameters:
         local context = std.extVar('context');
         local vars = import 'vars.jsonnet';
 
+        local isOpenShift = function(context)
+          std.objectHas(context.cluster.status, 'facts') && std.objectHas(context.cluster.status.facts, 'openshiftOAuthRoute');
+
         local redirectUris = function(context)
-          if std.objectHas(context.cluster.status, 'facts') && std.objectHas(context.cluster.status.facts, 'openshiftOAuthRoute') then
+          if isOpenShift(context) then
             [
               'https://%s/oauth2callback/%s' % [ std.parseJson(context.cluster.status.facts.openshiftOAuthRoute), vars.ocpIntegrationName ],
             ]
           else
             [
               // Defaults for https://github.com/int128/kubelogin
-              'http://localhost:8000/callback',
-              'http://localhost:18000/callback',
+              'http://localhost:8000',
+              'http://localhost:18000',
             ];
 
         local clientId = '%s%s' % [ vars.clientPrefix, context.cluster.metadata.name ];
@@ -107,7 +110,8 @@ parameters:
           implicitFlowEnabled: false,
           directAccessGrantsEnabled: true,
           serviceAccountsEnabled: false,
-          publicClient: false,
+          // Defaults for https://github.com/int128/kubelogin
+          publicClient: !isOpenShift(context),
           frontchannelLogout: true,
           protocol: 'openid-connect',
           protocolMappers: [
