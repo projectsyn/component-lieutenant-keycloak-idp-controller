@@ -1,6 +1,7 @@
 parameters:
   lieutenant_keycloak_idp_controller:
-    =_metadata: {}
+    =_metadata:
+      multi_tenant: true
     namespace: syn-lieutenant-keycloak-idp-controller
     namespaceMetadata: {}
 
