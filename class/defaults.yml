@@ -18,7 +18,7 @@ parameters:
       kube_rbac_proxy:
         registry: gcr.io
         image: kubebuilder/kube-rbac-proxy
-        tag: v0.14.1
+        tag: v0.14.4
 
     manifests_version: ${lieutenant_keycloak_idp_controller:images:lieutenant_keycloak_idp_controller:tag}
 
