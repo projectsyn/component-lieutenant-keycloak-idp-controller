@@ -14,7 +14,7 @@ parameters:
       lieutenant_keycloak_idp_controller:
         registry: ghcr.io
         image: projectsyn/lieutenant-keycloak-idp-controller
-        tag: v0.2.0
+        tag: v0.3.0
       kube_rbac_proxy:
         registry: quay.io
         image: brancz/kube-rbac-proxy
